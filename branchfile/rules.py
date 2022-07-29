@@ -64,6 +64,7 @@ def check_branch(branches, parsed_branch) -> list:
 
 def expand_branch(branches, slots, parsed_branch):
     "fill in missing branch rules"
+    # todo: switch with random logic when missing (rather than crashing)
     ret = {}
     for key, val in branches.items():
         if key in parsed_branch:
