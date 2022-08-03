@@ -1,7 +1,7 @@
 import argparse, json
 import yaml
 from .schema import Root
-from .rules import map_branches, parse_branch, check_branch, expand_branch, apply
+from .rules import map_branches, parse_branch, check_branch, expand_branch, apply, format_branch
 
 def main():
     p = argparse.ArgumentParser()
@@ -16,6 +16,7 @@ def main():
     expanded = expand_branch(branches, slots, spec)
     print('spec', spec)
     print('expanded', expanded)
+    print('serial', format_branch(expanded))
     doc = apply(parsed, expanded, branches, slots, address_map)
     print(json.dumps(doc, indent=4))
 

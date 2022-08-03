@@ -6,6 +6,7 @@ from .schema import Root, BfList, BfDocBranch, BfAddressBranch
 # List[str] is [tag]
 # Dict[int, List[str]] is {slot: [tag]}
 BranchOptions = Dict[str, Union[List[str], Dict[int, List[str]]]]
+BranchSpec = Dict[str, Union[str, List[str]]]
 
 def map_branches(root: Root) -> BranchOptions:
     "return object with information about branch options"
@@ -62,7 +63,7 @@ def check_branch(branches, parsed_branch) -> list:
                 not_found.append((key, letter))
     return not_found
 
-def expand_branch(branches, slots, parsed_branch):
+def expand_branch(branches, slots, parsed_branch) -> BranchSpec:
     "fill in missing branch rules"
     # todo: switch with random logic when missing (rather than crashing)
     ret = {}
@@ -76,6 +77,13 @@ def expand_branch(branches, slots, parsed_branch):
             else:
                 ret[key] = random.choice(val)
     return ret
+
+def format_branch(spec: BranchSpec) -> str:
+    "serialize dict spec back to string so it can be stored + passed around"
+    return '.'.join(
+        f"{key}{''.join(val)}"
+        for key, val in spec.items()
+    )
 
 def set_address(doc, address, value):
     *parent_addr, child_addr = address

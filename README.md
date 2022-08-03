@@ -14,4 +14,5 @@ What does branching mean:
 
 - [x] generate document from branchfile yml
 - [x] shortcode to specify desired branching
+- [ ] weighting
 - [ ] examples + tests
