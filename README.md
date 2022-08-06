@@ -14,5 +14,8 @@ What does branching mean:
 
 - [x] generate document from branchfile yml
 - [x] shortcode to specify desired branching
-- [ ] weighting
-- [ ] examples + tests
+- [x] weighting
+- [ ] examples + tests, maybe mypy
+- [ ] lint a branchfile yml against a desired branch + doc spec
+- [ ] generate fancy docs for the branches in a doc
+- [ ] port to strongly typed language

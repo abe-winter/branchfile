@@ -1,4 +1,4 @@
-from typing import List, Dict, Union, Literal, Any
+from typing import List, Dict, Union, Literal, Any, Optional
 import pydantic
 
 class BfListItem(pydantic.BaseModel):
@@ -16,11 +16,13 @@ BfValue = Union[str, BfList, List[Any]]
 class BfDocBranch(pydantic.BaseModel):
     key: str
     tag: str
+    weight: Optional[float]
     doc: Dict[str, BfValue]
 
 class BfAddressBranch(pydantic.BaseModel):
     key: str
     tag: str
+    weight: Optional[float]
     address: List[Union[str, int]]
     value: Any
 

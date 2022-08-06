@@ -10,10 +10,10 @@ def main():
     args = p.parse_args()
 
     parsed = Root.parse_obj(yaml.safe_load(open(args.path)))
-    branches, slots, address_map = map_branches(parsed)
+    branches, slots, address_map, weights = map_branches(parsed)
     spec = parse_branch(args.spec)
     print('check', check_branch(branches, spec))
-    expanded = expand_branch(branches, slots, spec)
+    expanded = expand_branch(branches, slots, weights, spec)
     print('spec', spec)
     print('expanded', expanded)
     print('serial', format_branch(expanded))

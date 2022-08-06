@@ -1,18 +1,21 @@
 import collections, random, re
 from dataclasses import dataclass
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Tuple
 from .schema import Root, BfList, BfDocBranch, BfAddressBranch
 
 # List[str] is [tag]
 # Dict[int, List[str]] is {slot: [tag]}
-BranchOptions = Dict[str, Union[List[str], Dict[int, List[str]]]]
+BranchOptions = Dict[str, Union[List[str], Dict[int, List[str]]]] # todo: I think this is just Dict[str, List[str]] now
 BranchSpec = Dict[str, Union[str, List[str]]]
 
-def map_branches(root: Root) -> BranchOptions:
+def map_branches(root: Root) -> Tuple[BranchOptions, dict, dict, dict]:
     "return object with information about branch options"
     ret = {}
     slots = {}
     address_map = {}
+    weights = collections.defaultdict(dict)
+
+    # scan base doc
     for key, val in root.base.items():
         if isinstance(val, BfList):
             if val.key not in ret:
@@ -29,23 +32,38 @@ def map_branches(root: Root) -> BranchOptions:
             pass # assume no branches in here
         else:
             raise TypeError(f'unhandled type {type(val)} at {key}')
+
+    # scan branches section
     for i, branch in enumerate(root.branches):
         if isinstance(branch, (BfDocBranch, BfAddressBranch)):
             if branch.key not in ret:
                 ret[branch.key] = []
             ret[branch.key].append(branch.tag)
             address_map[branch.key, branch.tag] = ('branch', i)
+            if branch.weight:
+                weights[branch.key][branch.tag] = branch.weight
         else:
             raise TypeError(f'unhandled type {type(branch)} at {i}')
 
-    # convert {slot: values} to [values, values]
+    # mutate slots dict. convert {slot: values} to [values, values] (in slot order)
     for key, val in slots.items():
         opts = [()] * (max(val) + 1)
         for slot, vals in val.items():
             opts[slot] = vals
         slots[key] = opts
 
-    return ret, slots, address_map
+    # postprocess weights so they sum to 1
+    for key, val in weights.items():
+        tot_weight = sum(val.values())
+        missing = [tag for tag in ret[key] if tag not in val]
+        if missing and tot_weight < 1:
+            missing_weight = (1 - tot_weight) / len(missing)
+            val.update([(tag, missing_weight) for tag in missing])
+            tot_weight = sum(val.values())
+        for tag, weight in val.items():
+            val[tag] = val[tag] / tot_weight
+
+    return ret, slots, address_map, weights
 
 def parse_branch(raw: str) -> Dict[str, str]:
     sections = raw.split('.')
@@ -63,8 +81,8 @@ def check_branch(branches, parsed_branch) -> list:
                 not_found.append((key, letter))
     return not_found
 
-def expand_branch(branches, slots, parsed_branch) -> BranchSpec:
-    "fill in missing branch rules"
+def expand_branch(branches, slots, weights, parsed_branch) -> BranchSpec:
+    "fill in random values for keys that are in branches, but not in parsed branch"
     # todo: switch with random logic when missing (rather than crashing)
     ret = {}
     for key, val in branches.items():
@@ -73,9 +91,14 @@ def expand_branch(branches, slots, parsed_branch) -> BranchSpec:
         else:
             # todo: slotless random choice mode with length
             if key in slots:
+                # this is an embedded list field in root.doc
                 ret[key] = [random.choice(vals) for vals in slots[key]]
             else:
-                ret[key] = random.choice(val)
+                # this is an addressed field from root.branches
+                if key in weights:
+                    ret[key] = random.choices(val, weights=[weights[key].get(x, 0) for x in val])[0]
+                else:
+                    ret[key] = random.choice(val)
     return ret
 
 def format_branch(spec: BranchSpec) -> str:
@@ -85,7 +108,8 @@ def format_branch(spec: BranchSpec) -> str:
         for key, val in spec.items()
     )
 
-def set_address(doc, address, value):
+def set_address(doc: dict, address: list, value):
+    "helper; takes a slot address, sets value in doc"
     *parent_addr, child_addr = address
     parent = doc
     for key in parent_addr:
