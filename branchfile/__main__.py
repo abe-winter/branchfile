@@ -17,7 +17,7 @@ def main():
     print('spec', spec)
     print('expanded', expanded)
     print('serial', format_branch(expanded))
-    doc = apply(parsed, expanded, branches, slots, address_map)
+    doc = apply(parsed, expanded, slots, address_map)
     print(json.dumps(doc, indent=4))
 
 if __name__ == '__main__':

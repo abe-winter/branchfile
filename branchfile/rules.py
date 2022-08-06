@@ -1,5 +1,4 @@
-import collections, random, re
-from dataclasses import dataclass
+import collections, random
 from typing import List, Dict, Union, Tuple
 from .schema import Root, BfList, BfDocBranch, BfAddressBranch
 
@@ -60,13 +59,12 @@ def map_branches(root: Root) -> Tuple[BranchOptions, dict, dict, dict]:
             missing_weight = (1 - tot_weight) / len(missing)
             val.update([(tag, missing_weight) for tag in missing])
             tot_weight = sum(val.values())
-        for tag, weight in val.items():
-            val[tag] = val[tag] / tot_weight
+        for tag in val:
+            val[tag] /= tot_weight
 
     return ret, slots, address_map, weights
 
 def parse_branch(raw: str) -> Dict[str, str]:
-    sections = raw.split('.')
     return {
         section[0]: section[1:]
         for section in raw.split('.') if section
@@ -116,7 +114,7 @@ def set_address(doc: dict, address: list, value):
         parent = parent[int(key) if isinstance(parent, list) else key]
     parent[child_addr] = value
 
-def apply(root: Root, spec, branches, slots, address_map) -> dict:
+def apply(root: Root, spec, slots, address_map) -> dict:
     "generate a merged copy of the doc using the (expanded) branch spec"
     doc = root.base.copy()
     for key, val in spec.items():
