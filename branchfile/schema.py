@@ -26,7 +26,12 @@ class BfAddressBranch(pydantic.BaseModel):
     address: List[Union[str, int]]
     value: Any
 
-BfBranch = Union[BfDocBranch, BfAddressBranch]
+class BfBoolBranch(pydantic.BaseModel):
+    key: str
+    weight: Optional[float] # weight of true
+    address: List[Union[str, int]]
+
+BfBranch = Union[BfDocBranch, BfAddressBranch, BfBoolBranch]
 
 class Root(pydantic.BaseModel):
     base: Dict[str, BfValue]

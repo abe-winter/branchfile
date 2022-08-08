@@ -1,6 +1,6 @@
 import argparse, json
 import yaml
-from .schema import Root
+from .schema import Root, BfBoolBranch
 from .rules import map_branches, parse_branch, check_branch, expand_branch, apply, format_branch
 
 def main():
@@ -28,7 +28,8 @@ def main():
             else:
                 print(f'branch key "{key}"')
                 for tag in tags:
-                    print(f'- "{tag}"', parsed.branches[address_map[(key, tag)][1]])
+                    branch = parsed.branches[address_map[(key, tag)][1]]
+                    print(f'- "{tag}"', branch, '(autobool)' if isinstance(branch, BfBoolBranch) else '')
     elif args.command == 'render':
         spec = parse_branch(args.spec)
         if (check_fail := check_branch(branches, spec)):

@@ -1,6 +1,6 @@
 import collections, random
 from typing import List, Dict, Union, Tuple
-from .schema import Root, BfList, BfDocBranch, BfAddressBranch
+from .schema import Root, BfList, BfDocBranch, BfAddressBranch, BfBoolBranch
 
 # List[str] is [tag]
 # Dict[int, List[str]] is {slot: [tag]}
@@ -32,7 +32,7 @@ def map_branches(root: Root) -> Tuple[BranchOptions, dict, dict, dict]:
         else:
             raise TypeError(f'unhandled type {type(val)} at {key}')
 
-    # scan branches section
+    # scan branches section, fill ret, address_map, weight
     for i, branch in enumerate(root.branches):
         if isinstance(branch, (BfDocBranch, BfAddressBranch)):
             if branch.key not in ret:
@@ -41,6 +41,15 @@ def map_branches(root: Root) -> Tuple[BranchOptions, dict, dict, dict]:
             address_map[branch.key, branch.tag] = ('branch', i)
             if branch.weight:
                 weights[branch.key][branch.tag] = branch.weight
+        elif isinstance(branch, BfBoolBranch):
+            if branch.key in ret:
+                raise KeyError('dupe bool branch', branch.key)
+            ret[branch.key] = ['y', 'n']
+            for tag in 'yn':
+                address_map[branch.key, tag] = ('branch', i)
+            if branch.weight:
+                weights[branch.key]['y'] = branch.weight
+                weights[branch.key]['n'] = 1 - branch.weight
         else:
             raise TypeError(f'unhandled type {type(branch)} at {i}')
 
@@ -114,6 +123,8 @@ def set_address(doc: dict, address: list, value):
         parent = parent[int(key) if isinstance(parent, list) else key]
     parent[child_addr] = value
 
+BOOL_MAP = {'y': True, 'n': False}
+
 def apply(root: Root, spec, slots, address_map) -> dict:
     "generate a merged copy of the doc using the (expanded) branch spec"
     doc = root.base.copy()
@@ -126,6 +137,8 @@ def apply(root: Root, spec, slots, address_map) -> dict:
                     doc.update(resolved.doc)
                 elif isinstance(resolved, BfAddressBranch):
                     set_address(doc, resolved.address, resolved.value)
+                elif isinstance(resolved, BfBoolBranch):
+                    set_address(doc, resolved.address, BOOL_MAP[val])
                 else:
                     raise TypeError(f"unk source type {type(resolved)} at {source} in {key} {val}")
             else:
